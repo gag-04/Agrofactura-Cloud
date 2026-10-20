@@ -1,0 +1,49 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+credentials.json
+service-account-key.json
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+vendor/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+bin/
+out/
+*.pdf
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+*.sqlite3
+
+# Testing and coverage
+.coverage
+htmlcov/
+.pytest_cache/
