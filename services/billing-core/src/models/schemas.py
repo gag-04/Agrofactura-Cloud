@@ -2,14 +2,17 @@
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field
+
+from pydantic import BaseModel, ConfigDict, Field
+
+EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
 
 # ---------------------------------------------------------------------------
 # Auth Schemas
 # ---------------------------------------------------------------------------
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., pattern=EMAIL_REGEX)
     password: str
     provider: str = "credentials"
 
@@ -34,11 +37,14 @@ class TokenResponse(BaseModel):
 class CustomerCreate(BaseModel):
     company_name: str = Field(..., min_length=2)
     cif_nif: str = Field(..., min_length=8, max_length=15)
-    email: EmailStr
+    email: str = Field(..., pattern=EMAIL_REGEX)
     address: str = Field(..., min_length=5)
 
 
+
 class CustomerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     company_name: str
     cif_nif: str
@@ -46,9 +52,6 @@ class CustomerResponse(BaseModel):
     address: str
     status: str = "active"
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +108,8 @@ class InvoiceResponse(BaseModel):
 
 
 class InvoiceDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     invoice_number: str
     status: str
@@ -112,8 +117,6 @@ class InvoiceDetailResponse(BaseModel):
     drive_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
 
 class HealthResponse(BaseModel):
