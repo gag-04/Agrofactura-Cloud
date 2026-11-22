@@ -77,7 +77,7 @@ def calculate_reagp_invoice(
 
     Under REAGP (Régimen Especial de Agricultura, Ganadería y Pesca):
     - No direct VAT (IVA) is applied.
-    - Instead, an agricultural flat-rate compensation is added (12.0% for crops/forestry, 10.5% livestock).
+    - Flat-rate agricultural compensation is added (12.0% crops, 10.5% livestock).
     - An IRPF personal income tax withholding is deducted (-2.0%).
     """
     taxable_base = 0.0

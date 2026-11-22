@@ -1,6 +1,7 @@
 """SQLAlchemy database models for AgroFactura Cloud."""
 
 from datetime import datetime
+
 from sqlalchemy import (
     Column,
     DateTime,
@@ -8,7 +9,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 

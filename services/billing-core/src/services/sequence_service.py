@@ -1,6 +1,7 @@
 """Atomic sequence generator for strict correlative invoicing."""
 
 from sqlalchemy.orm import Session
+
 from src.models.db_models import InvoiceSequence
 
 
