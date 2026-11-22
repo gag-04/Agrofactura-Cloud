@@ -47,3 +47,6 @@ out/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Documentación privada
+plan_hito2.md
