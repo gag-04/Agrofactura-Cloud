@@ -1,9 +1,7 @@
 """Unit tests for the agricultural fiscal engine, Spanish NIF/CIF validator, and sequencer."""
 
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
 from src.core.database import Base
 from src.services.fiscal_engine import calculate_reagp_invoice, validate_spanish_id
 from src.services.sequence_service import get_next_invoice_number
@@ -79,7 +77,11 @@ class TestREAGPFiscalEngine:
         Total = 12,265.00 €
         """
         items = [
-            {"description": "Aceituna Picual Campaña 2026/2027 (kg)", "quantity": 12500.0, "unit_price": 0.88},
+            {
+                "description": "Aceituna Picual Campaña 2026/2027 (kg)",
+                "quantity": 12500.0,
+                "unit_price": 0.88,
+            },
             {"description": "Porte y transporte a almazara", "quantity": 1.0, "unit_price": 150.00},
         ]
 
