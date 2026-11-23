@@ -1,9 +1,12 @@
 # AgroFactura Cloud 🌾📄
 
 [![Hito 1](https://img.shields.io/badge/Hito%201-Completado-brightgreen?style=flat-square)](docs/README.md)
+[![Hito 2](https://img.shields.io/badge/Hito%202-Completado-brightgreen?style=flat-square)](docs/hito2.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Architecture: Cloud--Native](https://img.shields.io/badge/Architecture-Cloud--Native%20Microservices-orange?style=flat-square)](docs/README.md#4-arquitectura-de-referencia-y-microservicios)
-[![Standard: NIST SP 800--145](https://img.shields.io/badge/Standard-NIST%20SP%20800--145-purple?style=flat-square)](docs/README.md#2-justificación-teórica-bajo-nist-sp-800-145)
+[![Docker: Multi--Stage](https://img.shields.io/badge/Docker-Multi--Stage%20Builds-blue?style=flat-square&logo=docker)](compose.yaml)
+[![CI: GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-blue?style=flat-square&logo=githubactions)](.github/workflows/ci.yml)
+[![Registry: GHCR](https://img.shields.io/badge/Registry-GitHub%20Packages%20(GHCR)-purple?style=flat-square&logo=github)](https://github.com/orgs/gag-04/packages)
 
 > **Sistema Cloud-Native de Facturación y Cumplimiento Tributario para Pequeñas Explotaciones Agrícolas**  
 > Proyecto desarrollado para la asignatura *Cloud Computing: Fundamentos e Infraestructuras*  
