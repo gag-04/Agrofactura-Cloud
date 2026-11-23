@@ -1,0 +1,2 @@
+-r services/billing-core/requirements-dev.txt
+-r services/document-rendering/requirements-dev.txt

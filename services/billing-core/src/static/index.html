@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroFactura Cloud - Panel de Pruebas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .tab-btn.active {
+            border-bottom-color: #2b6cb0;
+            color: #2b6cb0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🌾</span>
+                <div>
+                    <span class="font-bold text-lg text-slate-900 tracking-tight">AgroFactura Cloud</span>
+                    <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Local Testing UI</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Service Status Indicators -->
+                <div class="hidden sm:flex items-center space-x-3 text-xs">
+                    <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">
+                        <span id="dot-core" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-slate-600 font-medium">Core (8000)</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">
+                        <span id="dot-render" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span class="text-slate-600 font-medium">Rendering (8001)</span>
+                    </div>
+                </div>
+
+                <!-- Farmer Session Card -->
+                <div id="session-card" class="flex items-center space-x-2 text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-lg">
+                    <span>👨‍🌾</span>
+                    <span class="font-semibold" id="farmer-name">Explotaciones San Isidro</span>
+                    <span class="text-emerald-700">(B23987451 - REAGP)</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8">
+            <button onclick="switchTab('tab-invoice')" id="btn-tab-invoice" class="tab-btn active py-4 px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <span>📄</span> <span>Emitir Factura REAGP</span>
+            </button>
+            <button onclick="switchTab('tab-customers')" id="btn-tab-customers" class="tab-btn py-4 px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <span>🏛️</span> <span>Cooperativas y Clientes</span>
+            </button>
+            <button onclick="switchTab('tab-audit')" id="btn-tab-audit" class="tab-btn py-4 px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <span>📜</span> <span>Libro de Facturas (Auditoría)</span>
+            </button>
+            <button onclick="switchTab('tab-console')" id="btn-tab-console" class="tab-btn py-4 px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <span>🧪</span> <span>Consola API & Swagger</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: EMITIR FACTURA REAGP -->
+        <!-- ================================================================= -->
+        <section id="tab-invoice" class="space-y-6">
+            <!-- Alert Banner for Newly Issued Invoice -->
+            <div id="invoice-success-banner" class="hidden bg-emerald-50 border border-emerald-300 rounded-xl p-6 shadow-sm">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500 text-white rounded-full text-xl">✓</div>
+                        <div>
+                            <h3 class="font-bold text-emerald-900 text-lg">¡Factura Emitida y Sellada Exitosamente!</h3>
+                            <p class="text-sm text-emerald-700">Número Correlativo Asignado: <span id="success-inv-number" class="font-mono font-bold text-emerald-950">AGR-2026-001</span> (Total: <span id="success-inv-total" class="font-bold">12,265.00 €</span>)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full sm:w-auto">
+                        <a id="btn-preview-pdf" href="#" target="_blank" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition">
+                            👁️ Ver / Descargar PDF Oficial
+                        </a>
+                        <a id="btn-drive-link" href="#" target="_blank" class="flex-1 sm:flex-none text-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-lg transition">
+                            ☁️ Google Drive
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left: Form -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Emisión de Liquidación de Cosecha</h2>
+                            <p class="text-xs text-slate-500">Aplica correlatividad atómica y motor fiscal según RD 1619/2012 y REAGP</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">Serie AGR-2026</span>
+                    </div>
+
+                    <!-- Customer Selection & Date -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Cooperativa o Comprador (*)</label>
+                            <select id="invoice-customer" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="">Cargando directorio...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Operación (*)</label>
+                            <input id="invoice-date" type="date" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Tax Regime Settings -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Régimen Fiscal Agrario</label>
+                            <select id="invoice-regime" onchange="recalculateTotals()" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="REAGP_CROP" selected>REAGP Agrícola / Olivar (+12.0% Compensación)</option>
+                                <option value="REAGP_LIVESTOCK">REAGP Ganadero (+10.5% Compensación)</option>
+                                <option value="GENERAL">Régimen General (+21.0% IVA Ordinario)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Retención de IRPF</label>
+                            <div class="flex items-center">
+                                <input id="invoice-irpf-pct" type="number" step="0.5" value="2.0" oninput="recalculateTotals()" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <span class="ml-2 text-sm text-slate-600 font-semibold">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lines of Harvest -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wide">Líneas de Cosecha y Servicios</label>
+                            <!-- Presets -->
+                            <div class="flex space-x-1 text-xs">
+                                <button type="button" onclick="addPresetLine('Aceituna Picual Campaña 2026/2027 (kg)', 12500, 0.88)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium">+ Aceituna Picual</button>
+                                <button type="button" onclick="addPresetLine('Porte y transporte a almazara', 1, 150)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium">+ Porte</button>
+                                <button type="button" onclick="addEmptyLine()" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium">+ Vacía</button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50 text-slate-600 font-semibold text-xs">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Concepto</th>
+                                        <th class="px-3 py-2 text-right w-24">Cantidad</th>
+                                        <th class="px-3 py-2 text-right w-28">Precio (€)</th>
+                                        <th class="px-3 py-2 text-right w-28">Subtotal</th>
+                                        <th class="px-2 py-2 text-center w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lines-body" class="divide-y divide-slate-200 bg-white">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Dispatch Options -->
+                    <div class="border-t border-slate-100 pt-4 space-y-3">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Despacho Cloud y Notificaciones</label>
+                        <div class="flex items-center space-x-3">
+                            <input id="dispatch-drive" type="checkbox" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded">
+                            <label for="dispatch-drive" class="text-xs text-slate-700 font-medium">Subida y archivo desatendido en Google Drive (Carpeta Facturas_2026)</label>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <div class="flex-1">
+                                <input id="dispatch-email" type="email" value="gestoria.rural@asesores.es" placeholder="Email de la gestoría contable..." class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <span class="text-xs text-slate-500 self-center">Notificación automática con PDF adjunto</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="pt-2">
+                        <button type="button" onclick="submitInvoice()" id="btn-submit-invoice" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <span>🚀</span> <span>Emitir y Sellar Factura Oficial</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Summary Card -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4 sticky top-24">
+                        <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-3">Desglose Fiscal en Tiempo Real</h3>
+
+                        <div class="space-y-2.5 text-sm">
+                            <div class="flex justify-between text-slate-600">
+                                <span>Base Imponible:</span>
+                                <span id="summary-base" class="font-mono font-semibold">0.00 €</span>
+                            </div>
+                            <div class="flex justify-between text-emerald-700">
+                                <span id="summary-comp-label">(+) Compensación REAGP (+12%):</span>
+                                <span id="summary-comp-val" class="font-mono font-semibold">+0.00 €</span>
+                            </div>
+                            <div class="flex justify-between text-rose-700">
+                                <span>(-) Retención IRPF (-2%):</span>
+                                <span id="summary-irpf-val" class="font-mono font-semibold">-0.00 €</span>
+                            </div>
+                            <div class="border-t border-slate-200 pt-3 flex justify-between text-base font-bold text-slate-900">
+                                <span>Total Factura:</span>
+                                <span id="summary-total" class="font-mono text-emerald-600 text-lg">0.00 €</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 space-y-1">
+                            <div class="font-bold">⚖️ Marco Tributario Agrario</div>
+                            <p>Bajo el REAGP (Art. 124 Ley 37/1992), el agricultor no liquida IVA sino que percibe una compensación a tanto alzado de la almazara o cooperativa compradora.</p>
+                        </div>
+
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+                            <div class="font-bold">🔒 Correlatividad VeriFactu</div>
+                            <p>Al confirmar, se bloqueará la secuencia transaccional garantizando correlatividad estricta sin saltos temporales.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 2: CLIENTES Y COOPERATIVAS -->
+        <!-- ================================================================= -->
+        <section id="tab-customers" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Add Customer Form -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">Registrar Nueva Cooperativa / Cliente</h2>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Razón Social (*)</label>
+                        <input id="new-cust-name" type="text" placeholder="Ej. Almazara Cooperativa Ntra. Sra. de la Oliva" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">CIF / NIF Oficial (*)</label>
+                        <input id="new-cust-cif" type="text" placeholder="Ej. F23112233" oninput="validateCIFInput(this.value)" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono uppercase">
+                        <p id="cif-feedback" class="text-xs mt-1 text-slate-500">Introduce un NIF/CIF español válido (Tipo F = Cooperativas agrarias).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico de Facturación (*)</label>
+                        <input id="new-cust-email" type="email" placeholder="facturas@cooperativa.es" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Dirección Fiscal (*)</label>
+                        <input id="new-cust-address" type="text" placeholder="Ctra. de Córdoba km 14, Jaén" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <button type="button" onclick="submitNewCustomer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition text-sm">
+                        Registrar Cooperativa
+                    </button>
+                </div>
+
+                <!-- Customer Directory Table -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-900">Directorio de Almazaras y Cooperativas</h2>
+                        <button onclick="loadCustomers()" class="text-xs text-blue-600 hover:underline">🔄 Actualizar</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200 text-sm">
+                            <thead class="bg-slate-50 text-slate-600 text-xs font-semibold">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Razón Social</th>
+                                    <th class="px-4 py-2 text-left">CIF/NIF</th>
+                                    <th class="px-4 py-2 text-left">Email</th>
+                                    <th class="px-4 py-2 text-left">Dirección</th>
+                                    <th class="px-3 py-2 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customers-list-body" class="divide-y divide-slate-200">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-slate-400">Cargando clientes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 3: LIBRO DE FACTURAS Y AUDITORÍA -->
+        <!-- ================================================================= -->
+        <section id="tab-audit" class="hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Libro Registro de Facturas Expedidas (Auditoría VeriFactu)</h2>
+                        <p class="text-xs text-slate-500">Traza inmutable ordenada por secuencia atómica correlativa según Ley 11/2021</p>
+                    </div>
+                    <button onclick="loadAuditInvoices()" class="self-start sm:self-auto text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-300 font-semibold">
+                        🔄 Recargar Histórico
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs font-semibold">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Nº Factura</th>
+                                <th class="px-4 py-2 text-left">Fecha Registro</th>
+                                <th class="px-4 py-2 text-right">Importe Total (€)</th>
+                                <th class="px-4 py-2 text-center">Estado</th>
+                                <th class="px-4 py-2 text-center">Documento Cloud</th>
+                                <th class="px-4 py-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-list-body" class="divide-y divide-slate-200 font-mono text-xs">
+                            <tr>
+                                <td colspan="6" class="text-center py-6 text-slate-400 font-sans">No hay facturas emitidas todavía. Emite una en la pestaña 'Emitir Factura REAGP'.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 4: CONSOLA Y PRUEBAS API -->
+        <!-- ================================================================= -->
+        <section id="tab-console" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Health Checks & Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">Estado de los Microservicios</h2>
+
+                    <div class="space-y-3">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-sm">billing-core-service</div>
+                                <div class="text-xs text-slate-500">http://localhost:8000/api/v1/health</div>
+                            </div>
+                            <span id="badge-core" class="px-2.5 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 font-semibold">Healthy</span>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-sm">document-rendering-service</div>
+                                <div class="text-xs text-slate-500">http://localhost:8001/api/v1/health</div>
+                            </div>
+                            <span id="badge-render" class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold">Comprobando...</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center space-x-3">
+                        <a href="/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-lg transition">
+                            📚 Swagger UI (OpenAPI)
+                        </a>
+                        <button onclick="checkMicroserviceHealth()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg border border-slate-300 transition">
+                            Sondear Microservicios
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live JSON Inspector -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                    <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">Inspector JSON de Respuestas REST</h2>
+                    <pre id="json-inspector" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs font-mono overflow-auto max-h-80">{"status": "ready", "message": "Ejecuta alguna operación para ver el payload en tiempo real"}</pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        AgroFactura Cloud • Máster Universitario en Ingeniería Informática (UGR) • Cloud Computing Hito 2
+    </footer>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        let currentToken = null;
+        let invoiceLines = [];
+
+        // Initialize today's date
+        document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
+
+        // -------------------------------------------------------------
+        // Tab Navigation
+        // -------------------------------------------------------------
+        function switchTab(tabId) {
+            ['tab-invoice', 'tab-customers', 'tab-audit', 'tab-console'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById('btn-' + id).classList.remove('active');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).classList.add('active');
+
+            if (tabId === 'tab-customers') loadCustomers();
+            if (tabId === 'tab-audit') loadAuditInvoices();
+            if (tabId === 'tab-console') checkMicroserviceHealth();
+        }
+
+        // -------------------------------------------------------------
+        // Authentication & Auto-Login
+        // -------------------------------------------------------------
+        async function autoLogin() {
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'agricultor.picual@agroejemplo.es',
+                        password: 'PasswordSegura2026!',
+                        provider: 'credentials'
+                    })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentToken = data.access_token;
+                    document.getElementById('farmer-name').textContent = data.farmer.name;
+                    await loadCustomers();
+                }
+            } catch (err) {
+                console.warn('Auto-login fallback:', err);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Customers Management
+        // -------------------------------------------------------------
+        async function loadCustomers() {
+            try {
+                const headers = currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {};
+                const res = await fetch('/api/v1/customers', { headers });
+                if (res.ok) {
+                    const customers = await res.json();
+                    renderCustomerSelect(customers);
+                    renderCustomerTable(customers);
+                }
+            } catch (err) {
+                console.error('Error loading customers:', err);
+            }
+        }
+
+        function renderCustomerSelect(customers) {
+            const select = document.getElementById('invoice-customer');
+            select.innerHTML = '';
+            if (customers.length === 0) {
+                select.innerHTML = '<option value="">No hay cooperativas registradas (Ve a pestaña Clientes)</option>';
+                return;
+            }
+            customers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.company_name} (${c.cif_nif})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderCustomerTable(customers) {
+            const tbody = document.getElementById('customers-list-body');
+            tbody.innerHTML = '';
+            if (customers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-400">Sin cooperativas registradas.</td></tr>';
+                return;
+            }
+            customers.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2 font-medium text-slate-900">${c.company_name}</td>
+                    <td class="px-4 py-2 font-mono text-xs text-blue-700">${c.cif_nif}</td>
+                    <td class="px-4 py-2 text-slate-600">${c.email}</td>
+                    <td class="px-4 py-2 text-slate-500">${c.address}</td>
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="selectCustomerForInvoice(${c.id})" class="text-xs bg-slate-100 hover:bg-blue-50 text-blue-700 font-semibold px-2 py-1 rounded border border-slate-200">Facturar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectCustomerForInvoice(id) {
+            switchTab('tab-invoice');
+            document.getElementById('invoice-customer').value = id;
+        }
+
+        async function submitNewCustomer() {
+            const name = document.getElementById('new-cust-name').value.trim();
+            const cif = document.getElementById('new-cust-cif').value.trim().toUpperCase();
+            const email = document.getElementById('new-cust-email').value.trim();
+            const address = document.getElementById('new-cust-address').value.trim();
+
+            if (!name || !cif || !email || !address) {
+                alert('Por favor completa todos los campos del formulario.');
+                return;
+            }
+
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+
+                const res = await fetch('/api/v1/customers', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ company_name: name, cif_nif: cif, email, address })
+                });
+
+                const data = await res.json();
+                document.getElementById('json-inspector').textContent = JSON.stringify(data, null, 2);
+
+                if (res.ok) {
+                    alert('¡Cooperativa registrada exitosamente!');
+                    document.getElementById('new-cust-name').value = '';
+                    document.getElementById('new-cust-cif').value = '';
+                    document.getElementById('new-cust-email').value = '';
+                    document.getElementById('new-cust-address').value = '';
+                    await loadCustomers();
+                } else {
+                    alert('Error: ' + (data.detail || 'No se pudo registrar la cooperativa'));
+                }
+            } catch (err) {
+                alert('Error de conexión: ' + err.message);
+            }
+        }
+
+        function validateCIFInput(val) {
+            const feedback = document.getElementById('cif-feedback');
+            val = val.trim().toUpperCase();
+            if (!val) {
+                feedback.textContent = 'Introduce un NIF/CIF español válido (Tipo F = Cooperativas agrarias).';
+                feedback.className = 'text-xs mt-1 text-slate-500';
+                return;
+            }
+            if (/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(val) || /^\d{8}[A-Z]$/.test(val) || /^[XYZ]\d{7}[A-Z]$/.test(val)) {
+                feedback.textContent = '✓ Formato sintáctico válido';
+                feedback.className = 'text-xs mt-1 text-emerald-600 font-semibold';
+            } else {
+                feedback.textContent = '⚠️ Debe ser un DNI, NIE o CIF español (ej. F23112233)';
+                feedback.className = 'text-xs mt-1 text-rose-600 font-medium';
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Invoice Dynamic Lines & Math
+        // -------------------------------------------------------------
+        function addPresetLine(desc, qty, price) {
+            invoiceLines.push({ description: desc, quantity: qty, unit_price: price });
+            renderLines();
+        }
+
+        function addEmptyLine() {
+            invoiceLines.push({ description: '', quantity: 1, unit_price: 1.0 });
+            renderLines();
+        }
+
+        function removeLine(idx) {
+            invoiceLines.splice(idx, 1);
+            renderLines();
+        }
+
+        function updateLine(idx, field, val) {
+            if (field === 'quantity' || field === 'unit_price') {
+                invoiceLines[idx][field] = parseFloat(val) || 0;
+            } else {
+                invoiceLines[idx][field] = val;
+            }
+            const sub = (invoiceLines[idx].quantity * invoiceLines[idx].unit_price).toFixed(2);
+            document.getElementById(`subtotal-${idx}`).textContent = `${sub} €`;
+            recalculateTotals();
+        }
+
+        function renderLines() {
+            const tbody = document.getElementById('lines-body');
+            tbody.innerHTML = '';
+            invoiceLines.forEach((line, idx) => {
+                const sub = (line.quantity * line.unit_price).toFixed(2);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-3 py-2">
+                        <input type="text" value="${line.description}" oninput="updateLine(${idx}, 'description', this.value)" placeholder="Descripción de cosecha..." class="w-full text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </td>
+                    <td class="px-3 py-2 text-right">
+                        <input type="number" step="any" value="${line.quantity}" oninput="updateLine(${idx}, 'quantity', this.value)" class="w-full text-right text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none font-mono">
+                    </td>
+                    <td class="px-3 py-2 text-right">
+                        <input type="number" step="0.01" value="${line.unit_price}" oninput="updateLine(${idx}, 'unit_price', this.value)" class="w-full text-right text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none font-mono">
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800" id="subtotal-${idx}">
+                        ${sub} €
+                    </td>
+                    <td class="px-2 py-2 text-center">
+                        <button onclick="removeLine(${idx})" class="text-rose-500 hover:text-rose-700 font-bold text-xs">✕</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            recalculateTotals();
+        }
+
+        function recalculateTotals() {
+            let base = 0;
+            invoiceLines.forEach(l => {
+                base += (l.quantity * l.unit_price);
+            });
+            base = Math.round(base * 100) / 100;
+
+            const regime = document.getElementById('invoice-regime').value;
+            let compPct = 12.0;
+            let compLabel = '(+) Compensación REAGP (+12%):';
+
+            if (regime === 'REAGP_LIVESTOCK') {
+                compPct = 10.5;
+                compLabel = '(+) Compensación REAGP Ganadera (+10.5%):';
+            } else if (regime === 'GENERAL') {
+                compPct = 21.0;
+                compLabel = '(+) IVA General (+21%):';
+            }
+
+            const irpfPct = parseFloat(document.getElementById('invoice-irpf-pct').value) || 0;
+
+            const compAmount = Math.round(base * (compPct / 100) * 100) / 100;
+            const irpfAmount = Math.round(base * (irpfPct / 100) * 100) / 100;
+            const total = Math.round((base + compAmount - irpfAmount) * 100) / 100;
+
+            document.getElementById('summary-base').textContent = `${base.toFixed(2)} €`;
+            document.getElementById('summary-comp-label').textContent = compLabel;
+            document.getElementById('summary-comp-val').textContent = `+${compAmount.toFixed(2)} €`;
+            document.getElementById('summary-irpf-val').textContent = `-${irpfAmount.toFixed(2)} €`;
+            document.getElementById('summary-total').textContent = `${total.toFixed(2)} €`;
+        }
+
+        // -------------------------------------------------------------
+        // Submit Invoice to Backend
+        // -------------------------------------------------------------
+        async function submitInvoice() {
+            const customerId = document.getElementById('invoice-customer').value;
+            if (!customerId) {
+                alert('Por favor selecciona una cooperativa compradora.');
+                return;
+            }
+            if (invoiceLines.length === 0) {
+                alert('Añade al menos una línea de cosecha o porte a la factura.');
+                return;
+            }
+
+            const regimeVal = document.getElementById('invoice-regime').value;
+            let compPct = 12.0;
+            let taxRegimeStr = 'REAGP';
+            if (regimeVal === 'REAGP_LIVESTOCK') compPct = 10.5;
+            if (regimeVal === 'GENERAL') { compPct = 0; taxRegimeStr = 'GENERAL'; }
+
+            const payload = {
+                customer_id: parseInt(customerId),
+                issue_date: document.getElementById('invoice-date').value,
+                tax_regime: taxRegimeStr,
+                agricultural_compensation_pct: compPct,
+                withholding_tax_pct: parseFloat(document.getElementById('invoice-irpf-pct').value) || 2.0,
+                items: invoiceLines.map(l => ({
+                    description: l.description,
+                    quantity: parseFloat(l.quantity),
+                    unit_price: parseFloat(l.unit_price)
+                })),
+                dispatch_options: {
+                    upload_drive: document.getElementById('dispatch-drive').checked,
+                    email_to: document.getElementById('dispatch-email').value || null
+                }
+            };
+
+            const btn = document.getElementById('btn-submit-invoice');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> <span>Calculando y sellando factura...</span>';
+
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+
+                const res = await fetch('/api/v1/invoices', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                document.getElementById('json-inspector').textContent = JSON.stringify(data, null, 2);
+
+                if (res.ok) {
+                    // Show success banner
+                    document.getElementById('invoice-success-banner').classList.remove('hidden');
+                    document.getElementById('success-inv-number').textContent = data.invoice_number;
+                    document.getElementById('success-inv-total').textContent = `${data.financial_summary.total_invoice.toFixed(2)} €`;
+
+                    // Configure preview button to trigger streaming PDF endpoint
+                    const btnPdf = document.getElementById('btn-preview-pdf');
+                    btnPdf.href = `/api/v1/invoices/${data.invoice_id}/pdf`;
+
+                    const btnDrive = document.getElementById('btn-drive-link');
+                    btnDrive.href = data.document.drive_url || '#';
+
+                    // Scroll to banner
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    alert('Error emitiendo factura: ' + (data.detail || 'Revisa los datos'));
+                }
+            } catch (err) {
+                alert('Error de conexión con el backend: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🚀</span> <span>Emitir y Sellar Factura Oficial</span>';
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Audit Trail (Libro de Facturas)
+        // -------------------------------------------------------------
+        async function loadAuditInvoices() {
+            try {
+                const headers = currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {};
+                const res = await fetch('/api/v1/invoices', { headers });
+                if (res.ok) {
+                    const invoices = await res.json();
+                    const tbody = document.getElementById('audit-list-body');
+                    tbody.innerHTML = '';
+                    if (invoices.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400 font-sans">No hay facturas emitidas todavía.</td></tr>';
+                        return;
+                    }
+                    invoices.forEach(inv => {
+                        const tr = document.createElement('tr');
+                        const dateStr = inv.created_at ? new Date(inv.created_at).toLocaleString('es-ES') : '-';
+                        tr.innerHTML = `
+                            <td class="px-4 py-2.5 font-bold text-slate-900">${inv.invoice_number}</td>
+                            <td class="px-4 py-2.5 text-slate-600">${dateStr}</td>
+                            <td class="px-4 py-2.5 text-right font-bold text-emerald-700">${inv.total.toFixed(2)} €</td>
+                            <td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">${inv.status}</span></td>
+                            <td class="px-4 py-2.5 text-center"><a href="${inv.drive_url || '#'}" target="_blank" class="text-blue-600 hover:underline text-[11px]">Drive Link</a></td>
+                            <td class="px-4 py-2.5 text-center">
+                                <a href="/api/v1/invoices/${inv.id}/pdf" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded text-[11px] font-semibold border border-blue-200">Ver PDF</a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading audit log:', err);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Health Probe for Both Services
+        // -------------------------------------------------------------
+        async function checkMicroserviceHealth() {
+            // Check billing-core
+            try {
+                const resCore = await fetch('/api/v1/health');
+                if (resCore.ok) {
+                    document.getElementById('dot-core').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                    document.getElementById('badge-core').className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 font-semibold';
+                    document.getElementById('badge-core').textContent = 'Healthy (200 OK)';
+                }
+            } catch (e) {
+                document.getElementById('dot-core').className = 'w-2 h-2 rounded-full bg-rose-500';
+            }
+
+            // Check document-rendering (attempting port 8001)
+            try {
+                const resRender = await fetch('http://localhost:8001/api/v1/health', { mode: 'cors' });
+                if (resRender.ok) {
+                    document.getElementById('dot-render').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                    document.getElementById('badge-render').className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 font-semibold';
+                    document.getElementById('badge-render').textContent = 'Healthy (200 OK)';
+                }
+            } catch (e) {
+                document.getElementById('dot-render').className = 'w-2 h-2 rounded-full bg-slate-400';
+                document.getElementById('badge-render').className = 'px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold';
+                document.getElementById('badge-render').textContent = 'Sin conexión directa local (Normal si no está corriendo en 8001)';
+            }
+        }
+
+        // Initialize with default demo lines
+        addPresetLine('Aceituna Picual Campaña 2026/2027 (kg)', 12500, 0.88);
+        addPresetLine('Porte y transporte a almazara', 1, 150);
+        autoLogin();
+        checkMicroserviceHealth();
+    </script>
+</body>
+</html>
