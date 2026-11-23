@@ -1,0 +1,114 @@
+# ==============================================================================
+# AgroFactura Cloud - Local Multi-Container Orchestration Manifest
+# Conforming to Compose Specification V2 (Standard Cloud-Native)
+# ==============================================================================
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # 1. Relational Database Service: PostgreSQL 16 Alpine
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: agrofactura-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agrofactura_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agrofactura_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-agrofactura_db}
+    volumes:
+      # Managed named persistent volume for durability
+      - postgres_data:/var/lib/postgresql/data
+      # SQL initialization schema
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      # Strictly isolated backend tier (no access from public network or internet)
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agrofactura_user} -d ${POSTGRES_DB:-agrofactura_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # 2. Backend & Invoicing Core Service: billing-core-service
+  # ----------------------------------------------------------------------------
+  billing-core:
+    build:
+      context: ./services/billing-core
+      dockerfile: Dockerfile
+    container_name: agrofactura-billing-core
+    restart: unless-stopped
+    ports:
+      # Expose REST API and interactive Web UI to host
+      - "${PORT_BILLING_CORE:-8000}:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-agrofactura_user}:${POSTGRES_PASSWORD:-agrofactura_secure_password_2026}@db:5432/${POSTGRES_DB:-agrofactura_db}
+      JWT_SECRET: ${JWT_SECRET:-development-secret-key-agrofactura-change-me-in-production-2026}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      INTERNAL_M2M_TOKEN: ${INTERNAL_M2M_TOKEN:-internal-m2m-token-agrofactura-secret-2026}
+      DOCUMENT_RENDERING_SERVICE_URL: http://document-rendering:8001
+    networks:
+      - public-net
+      - internal-net
+      - backend-net
+    depends_on:
+      db:
+        condition: service_healthy
+      document-rendering:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 3. Document Rendering & Cloud Broker Service: document-rendering-service
+  # ----------------------------------------------------------------------------
+  document-rendering:
+    build:
+      context: ./services/document-rendering
+      dockerfile: Dockerfile
+    container_name: agrofactura-document-rendering
+    restart: unless-stopped
+    ports:
+      # Exposed for direct local probing and inspection
+      - "${PORT_RENDERING:-8001}:8001"
+    environment:
+      INTERNAL_M2M_TOKEN: ${INTERNAL_M2M_TOKEN:-internal-m2m-token-agrofactura-secret-2026}
+      GDRIVE_MOCK_MODE: ${GDRIVE_MOCK_MODE:-true}
+      SMTP_MOCK_MODE: ${SMTP_MOCK_MODE:-true}
+    networks:
+      # Isolated internal communication with billing-core (no database access)
+      - public-net
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ==============================================================================
+# Isolated Virtual Networks Definition (Defense-in-Depth)
+# ==============================================================================
+networks:
+  # Public tier: Receives external developer/user traffic on port 8000
+  public-net:
+    driver: bridge
+    name: agrofactura-public-net
+
+  # Internal M2M tier: Secure communication between core and rendering service
+  internal-net:
+    driver: bridge
+    name: agrofactura-internal-net
+
+  # Backend tier: Private network connecting billing-core and PostgreSQL
+  backend-net:
+    driver: bridge
+    name: agrofactura-backend-net
+
+# ==============================================================================
+# Managed Persistent Volumes Definition
+# ==============================================================================
+volumes:
+  # Guarantees durability of financial records across container lifecycle
+  postgres_data:
+    name: agrofactura-postgres-data
