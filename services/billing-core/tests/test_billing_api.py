@@ -66,6 +66,14 @@ def test_health_check_endpoint():
     assert "timestamp" in data
 
 
+def test_serve_dashboard_ui():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "AgroFactura Cloud" in response.text
+
+
+
 # ---------------------------------------------------------------------------
 # 2. Authentication (US-01)
 # ---------------------------------------------------------------------------
