@@ -1,6 +1,6 @@
 """Document rendering and cloud dispatch API router."""
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, Response, status
 
 from src.adapters.drive_adapter import upload_pdf_to_drive
 from src.adapters.email_adapter import dispatch_email_with_pdf
@@ -72,4 +72,29 @@ def render_invoice_document(
         drive_web_view_link=drive_link,
         email_delivery_status=email_status,
         email_recipient=email_recipient,
+    )
+
+
+@router.post(
+    "/render/pdf",
+    response_class=Response,
+    status_code=status.HTTP_200_OK,
+)
+def render_invoice_pdf_raw(
+    request: DocumentRenderRequest,
+    x_service_token: str = Header(None, alias="X-Service-Token"),
+):
+    """Compiles HTML5/CSS template into raw binary PDF for direct streaming."""
+    if not x_service_token or x_service_token != settings.INTERNAL_M2M_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token interno M2M inválido o ausente en cabecera 'X-Service-Token'.",
+        )
+
+    html_content = compile_html("invoice_template.html", request.model_dump())
+    pdf_bytes, _ = render_pdf(html_content)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=Factura_{request.invoice_number}.pdf"},
     )

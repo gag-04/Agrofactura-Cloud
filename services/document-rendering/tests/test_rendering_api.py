@@ -100,3 +100,33 @@ def test_render_document_success():
     assert "https://drive.google.com/file/d/" in data["drive_web_view_link"]
     assert data["email_delivery_status"] == "sent"
     assert data["email_recipient"] == "gestoria.rural@asesores.es"
+
+
+def test_render_raw_pdf_success():
+    payload = {
+        "invoice_number": "AGR-2026-001",
+        "issue_date": "2026-10-20",
+        "issuer": {
+            "name": "Explotaciones San Isidro",
+            "cif_nif": "B23987451",
+            "address": "Úbeda",
+        },
+        "recipient": {
+            "name": "Almazara Cooperativa",
+            "cif_nif": "F23112233",
+            "address": "Jaén",
+        },
+        "breakdown": {
+            "taxable_base": 1000.0,
+            "compensation_amount": 120.0,
+            "retention_amount": 20.0,
+            "grand_total": 1100.0,
+        },
+        "lines": [{"concept": "Aceituna", "qty": 1000, "price": 1.0, "total": 1000.0}],
+    }
+    headers = {"X-Service-Token": settings.INTERNAL_M2M_TOKEN}
+    response = client.post("/api/v1/documents/render/pdf", json=payload, headers=headers)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF-")
+
