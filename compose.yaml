@@ -44,7 +44,7 @@ services:
       # Expose REST API and interactive Web UI to host
       - "${PORT_BILLING_CORE:-8000}:8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-agrofactura_user}:${POSTGRES_PASSWORD:-agrofactura_secure_password_2026}@db:5432/${POSTGRES_DB:-agrofactura_db}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-agrofactura_user}:${POSTGRES_PASSWORD:-agrofactura_secure_password_2026}@db:5432/${POSTGRES_DB:-agrofactura_db}
       JWT_SECRET: ${JWT_SECRET:-development-secret-key-agrofactura-change-me-in-production-2026}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
       INTERNAL_M2M_TOKEN: ${INTERNAL_M2M_TOKEN:-internal-m2m-token-agrofactura-secret-2026}
