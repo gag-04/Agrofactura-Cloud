@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from src.api.customers import get_current_user
@@ -222,3 +222,84 @@ def list_invoices_audit_trail(
         )
         for inv in invoices
     ]
+
+
+@router.get("/{invoice_id}/pdf")
+def get_invoice_pdf(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetches and streams the rendered official PDF for an issued invoice."""
+    invoice = (
+        db.query(Invoice)
+        .filter(Invoice.id == invoice_id, Invoice.farmer_id == current_user.id)
+        .first()
+    )
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Factura con id {invoice_id} no encontrada.",
+        )
+
+    customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+    items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).all()
+
+    render_payload = {
+        "invoice_number": invoice.invoice_number,
+        "issue_date": invoice.issue_date,
+        "issuer": {
+            "name": current_user.name,
+            "cif_nif": current_user.cif_nif,
+            "address": current_user.address or "Finca Agrícola",
+        },
+        "recipient": {
+            "name": customer.company_name if customer else "Cliente",
+            "cif_nif": customer.cif_nif if customer else "NIF",
+            "address": customer.address if customer else "Dirección",
+        },
+        "breakdown": {
+            "taxable_base": invoice.taxable_base,
+            "compensation_amount": invoice.agricultural_compensation_amount,
+            "retention_amount": invoice.withholding_tax_amount,
+            "grand_total": invoice.total_amount,
+        },
+        "lines": [
+            {
+                "concept": it.description,
+                "qty": it.quantity,
+                "price": it.unit_price,
+                "total": it.subtotal,
+            }
+            for it in items
+        ],
+        "actions": {"upload_drive": False},
+    }
+
+    try:
+        with httpx.Client(timeout=4.0) as client:
+            res = client.post(
+                f"{settings.DOCUMENT_RENDERING_SERVICE_URL}/api/v1/documents/render/pdf",
+                json=render_payload,
+                headers={"X-Service-Token": settings.INTERNAL_M2M_TOKEN},
+            )
+            if res.status_code == 200:
+                return Response(
+                    content=res.content,
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": (
+                            f"inline; filename=Factura_{invoice.invoice_number}.pdf"
+                        )
+                    },
+                )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"No se pudo conectar con el servicio de renderizado: {exc}",
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Error generando el documento PDF de la factura.",
+    )

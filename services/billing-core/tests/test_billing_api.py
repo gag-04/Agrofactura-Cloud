@@ -211,3 +211,51 @@ def test_issue_invoice_and_audit_trail():
     audit_list = audit_res.json()
     assert len(audit_list) == 1
     assert audit_list[0]["invoice_number"] == "AGR-2026-001"
+
+
+def test_get_invoice_pdf_endpoints():
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Non-existent invoice
+    res_404 = client.get("/api/v1/invoices/9999/pdf", headers=headers)
+    assert res_404.status_code == 404
+
+    # 2. Existing invoice with mocked rendering response
+    from unittest.mock import MagicMock, patch
+
+    # Create an invoice first
+    customer_res = client.post(
+        "/api/v1/customers",
+        json={
+            "company_name": "Cooperativa San Juan",
+            "cif_nif": "F23112233",
+            "email": "info@sanjuan.es",
+            "address": "Úbeda",
+        },
+        headers=headers,
+    )
+    customer_id = customer_res.json()["id"]
+
+    inv_res = client.post(
+        "/api/v1/invoices",
+        json={
+            "customer_id": customer_id,
+            "issue_date": "2026-10-21",
+            "tax_regime": "REAGP",
+            "items": [{"description": "Aceituna", "quantity": 100.0, "unit_price": 1.0}],
+        },
+        headers=headers,
+    )
+    inv_id = inv_res.json()["invoice_id"]
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"%PDF-1.4 simulated binary content"
+
+    with patch("httpx.Client.post", return_value=mock_response):
+        pdf_res = client.get(f"/api/v1/invoices/{inv_id}/pdf", headers=headers)
+        assert pdf_res.status_code == 200
+        assert pdf_res.headers["content-type"] == "application/pdf"
+        assert pdf_res.content.startswith(b"%PDF-")
+
