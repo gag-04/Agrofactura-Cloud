@@ -25,6 +25,15 @@ from src.services.sequence_service import get_next_invoice_number
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
 
+def _get_rendering_urls() -> List[str]:
+    """Returns candidate URLs for document-rendering-service with smart fallbacks."""
+    urls = [settings.DOCUMENT_RENDERING_SERVICE_URL]
+    for fallback in ("http://localhost:8001", "http://127.0.0.1:8001"):
+        if fallback not in urls:
+            urls.append(fallback)
+    return urls
+
+
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
 def issue_invoice(
     invoice_in: InvoiceCreate,
@@ -130,18 +139,22 @@ def issue_invoice(
                     },
                 },
             }
-            # Attempt M2M internal call with short timeout
-            with httpx.Client(timeout=1.5) as client:
-                res = client.post(
-                    f"{settings.DOCUMENT_RENDERING_SERVICE_URL}/api/v1/documents/render",
-                    json=render_payload,
-                    headers={"X-Service-Token": settings.INTERNAL_M2M_TOKEN},
-                )
-                if res.status_code == 201:
-                    render_data = res.json()
-                    drive_url = render_data.get("drive_web_view_link", drive_url)
+            # Attempt M2M internal call with fallbacks
+            for base_url in _get_rendering_urls():
+                try:
+                    with httpx.Client(timeout=1.5) as client:
+                        res = client.post(
+                            f"{base_url}/api/v1/documents/render",
+                            json=render_payload,
+                            headers={"X-Service-Token": settings.INTERNAL_M2M_TOKEN},
+                        )
+                        if res.status_code == 201:
+                            render_data = res.json()
+                            drive_url = render_data.get("drive_web_view_link", drive_url)
+                            break
+                except Exception:
+                    continue
         except Exception:
-            # Fallback gracefully if document-rendering-service is not currently reached
             pass
 
     invoice.drive_url = drive_url
@@ -276,30 +289,36 @@ def get_invoice_pdf(
         "actions": {"upload_drive": False},
     }
 
-    try:
-        with httpx.Client(timeout=4.0) as client:
-            res = client.post(
-                f"{settings.DOCUMENT_RENDERING_SERVICE_URL}/api/v1/documents/render/pdf",
-                json=render_payload,
-                headers={"X-Service-Token": settings.INTERNAL_M2M_TOKEN},
-            )
-            if res.status_code == 200:
-                return Response(
-                    content=res.content,
-                    media_type="application/pdf",
-                    headers={
-                        "Content-Disposition": (
-                            f"inline; filename=Factura_{invoice.invoice_number}.pdf"
-                        )
-                    },
+    last_error = None
+    for base_url in _get_rendering_urls():
+        try:
+            with httpx.Client(timeout=4.0) as client:
+                res = client.post(
+                    f"{base_url}/api/v1/documents/render/pdf",
+                    json=render_payload,
+                    headers={"X-Service-Token": settings.INTERNAL_M2M_TOKEN},
                 )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"No se pudo conectar con el servicio de renderizado: {exc}",
-        )
+                if res.status_code == 200:
+                    return Response(
+                        content=res.content,
+                        media_type="application/pdf",
+                        headers={
+                            "Content-Disposition": (
+                                f"inline; filename=Factura_{invoice.invoice_number}.pdf"
+                            )
+                        },
+                    )
+        except Exception as exc:
+            last_error = exc
+            continue
 
+    candidate_urls = ", ".join(_get_rendering_urls())
     raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Error generando el documento PDF de la factura.",
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=(
+            f"No se pudo conectar con el servicio de renderizado en ({candidate_urls}). "
+            "Asegúrate de que document-rendering-service esté arrancado en el puerto 8001 "
+            "(ej: 'cd services/document-rendering && uvicorn src.main:app --port 8001'). "
+            f"Error detectado: {last_error}"
+        ),
     )

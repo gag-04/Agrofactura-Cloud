@@ -30,9 +30,9 @@ class Settings(BaseSettings):
         "INTERNAL_M2M_TOKEN", "internal-m2m-token-agrofactura-secret-2026"
     )
 
-    # Document Rendering Service internal URL
+    # Document Rendering Service internal URL (default to localhost:8001 for local dev)
     DOCUMENT_RENDERING_SERVICE_URL: str = os.getenv(
-        "DOCUMENT_RENDERING_SERVICE_URL", "http://document-rendering:8001"
+        "DOCUMENT_RENDERING_SERVICE_URL", "http://localhost:8001"
     )
 
     model_config = SettingsConfigDict(
